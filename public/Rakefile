@@ -1,0 +1,35 @@
+
+require 'yaml'
+
+def set_connstring
+  s = %Q!postgres://#{ENV["DB_APP"]}@localhost/#{ENV["DB_APP"]}!
+  ENV['DATABASE_URL'] ||= ENV["RACK_ENV"] == "test" ? "#{s}.test" : s
+end
+
+
+def basic_environment
+  warn "  Setting up environment..."
+
+  file = File.expand_path( File.join File.dirname(__FILE__), "./config.yml" )
+  if File.exist? file
+    YAML.load_file(file).each do |k,v|
+      warn "-> #{k}"
+      ENV[k.upcase] = v
+    end
+  end
+
+  set_connstring()
+end
+
+namespace :app do
+
+  desc "Set up the environment locally"
+  task :environment do
+    basic_environment()
+  end
+
+  desc "Run the app locally"
+  task :run_local => "app:environment" do
+    exec "bin/rackup config.ru -p #{ENV['RUN_LOCAL_PORT']}"
+  end
+end
